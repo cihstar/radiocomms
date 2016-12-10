@@ -1,0 +1,3 @@
+bers = 0:0.25:10;
+
+for BER in b
