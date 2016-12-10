@@ -1,4 +1,4 @@
-SNR = 10000;
+function BER = DigiTrans_baseband(SNR, plot_on, diff_on)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % bit stream generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -8,11 +8,17 @@ B = BitStream(LB);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % conversion to 16-QAM symbol 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-X = DQPSK_mod(B);			% to implement 2^(2*Nbits)-QAM
+X = QPSK_mod(B);			% to implement 2^(2*Nbits)-QAM
 
+if(diff_on == 1)
+    X = Differential_Modulation(X);
+end
+
+if(plot_on==1)
 figure(1); clf;
 plot(X(20:end),'.');
 title('constellation before'); xlabel('I'); ylabel('Q');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % upsamling and transmit filtering
@@ -35,7 +41,7 @@ s_hat = filter(c,1,s);
 sigma_x = std(s_hat);
 Ls = length(s_hat);
 noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N)/sqrt(2);
-s_hat = s_hat + sigma_x*10^(-SNR/20)*noise;
+s_hat = sqrt(2)*s_hat + sigma_x*10^(-SNR/20)*noise;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % receive filtering
@@ -45,10 +51,17 @@ s2_rx = filter(h,1,s_hat);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Differential Detection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-s2 = DQPSK_diff_detection(s2_rx, N);
+if(diff_on == 1)
+    s2 = Differential_Demodulation(s2_rx, N);
+else
+    s2 = s2_rx;
+end
+
+if(plot_on == 1)
 figure(2); clf;
 plot(s2(20:end),'.');
 title('constellation recieved after differential detection'); xlabel('I'); ylabel('Q');
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Symbol timing recovery
@@ -58,25 +71,27 @@ Ninit = 1;%EstimateNinit(s2, N, 1000, 0.003, 0.3, 0.3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Eye Diagram
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if(plot_on==1)
 EYE = zeros(32,200); 
 EYE(:) = s2(N*20+1:N*20+32*200)';
 figure(3); clf;
 plot(imag(EYE));	% I-component only
 title('eye diagram of received data');
 xlabel('wrapped time'); ylabel('I-component amplitude');
-
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % sampling at symbol rate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 X_hat = s2(Ninit:N:end);        % "sample" the signal 
+if(plot_on==1)
 figure(4); clf;
 plot(X_hat(20:end),'.');
 title('constellation recieved'); xlabel('I'); ylabel('Q');
-
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % conversion from QPSK to bits stream
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-B2 = DQPSK_demod(X_hat);
+B2 = QPSK_demod(X_hat);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate bit errors
