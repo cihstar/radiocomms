@@ -1,3 +1,4 @@
+
 snrs = 0:0.5:10;
 bers_qpsk = zeros(1,length(snrs));
 bers_dqpsk = zeros(1,length(snrs));
@@ -22,6 +23,7 @@ for SNR = snrs
 end
 
 figure(1);
+
 semilogy(snrs,bers_theo,'r', snrs,bers_qpsk,'bx',snrs,bers_dqpsk,'gx','LineWidth',2);
 legend('Theoretical QSPK', 'Simlated QPSK', 'Simulated DQPSK');
 title('BER v SNR');

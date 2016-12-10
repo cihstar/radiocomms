@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 snrs = 0:0.25:10;
 bers_qpsk = zeros(1,length(snrs));
 bers_dqpsk = zeros(1,length(snrs));
@@ -27,3 +28,8 @@ legend('Theoretical QSPK', 'Simlated QPSK', 'Simulated DQPSK');
 title('BER v SNR');
 xlabel('SNR / dB');
 ylabel('BER');
+=======
+bers = 0:0.25:10;
+
+for BER in b
+>>>>>>> c9b07a2f217031a7d7afd535e837bcad1280b27e
