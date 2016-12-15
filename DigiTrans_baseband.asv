@@ -2,7 +2,7 @@ function BER = DigiTrans_baseband(SNR, plot_on, diff_on)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % bit stream generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-LB = 100000;			% number of bits
+LB = 10000;			% number of bits
 B = BitStream(LB);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,8 +40,8 @@ s_hat = filter(c,1,s);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sigma_x = std(s_hat);
 Ls = length(s_hat);
-noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N/2);
-s_hat = sqrt(2)*s_hat + sigma_x*10^(-SNR/20)*noise;
+noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N)/sqrt(2);
+s_hat = sqrt(2) * s_hat + sigma_x*10^(-SNR/20)*noise;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % receive filtering
