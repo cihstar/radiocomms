@@ -77,7 +77,6 @@ figure(4);  clf;
 hold on
 periodogram(s_hat);
 title('IF filter');
-<<<<<<< HEAD
 order    = 5;
 fcutlow  = 69000;
 fcuthigh = 71000;
