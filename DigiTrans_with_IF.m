@@ -25,7 +25,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % upsampling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-N = 256; 	% oversampling factor for transmitted data
+N = 1024; 	% oversampling factor for transmitted data
 Xup = zeros(1,length(X)*N);
 for i = 1:N
     Xup(i:N:end) = X;
@@ -40,7 +40,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % modulation onto carrier and transmit filtering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Fc = 20e3; %20kHz carrier
+Fc = 70e3; %70kHz carrier
 t= 0:1/(length(Xup)):(1-1/(length(Xup)));
 
 s =  (real(Xup) .* cos(2*pi*Fc*t) + imag(Xup) .* sin(2*pi*Fc*t));
@@ -64,8 +64,13 @@ s_hat = filter(c,1,s_star);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sigma_x = std(s_hat);
 Ls = length(s_hat);
+<<<<<<< HEAD
+noise = (randn(1,Ls))*sqrt(N)/sqrt(2);
+s_hat = s_hat + sigma_x*10^(-SNR/20)*noise;
+=======
 noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N)/sqrt(2);
 s_hat = sqrt(2) * s_hat + sigma_x*10^(-SNR/20)*noise;
+>>>>>>> e463cf17e9dba74c5733f1bfa9d9f753bc623f3d
 % line above WAS: (incorrectly) s_hat = s_hat + sigma_x*10^(-SNR/20)*sqrt(N)*noise;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % receive filtering
@@ -77,10 +82,16 @@ figure(4);  clf;
 hold on
 periodogram(s_hat);
 title('IF filter');
+<<<<<<< HEAD
+order    = 5;
+fcutlow  = 69000;
+fcuthigh = 71000;
+=======
 end
 order    = 10;
 fcutlow  = 19000;
 fcuthigh = 21000;
+>>>>>>> e463cf17e9dba74c5733f1bfa9d9f753bc623f3d
 Fs1 = N*length(X);
 [b,a]    = butter(order,[fcutlow,fcuthigh]/(Fs1/2), 'bandpass');
 s2_hat = filter(b,a,s_hat);
@@ -95,17 +106,23 @@ end
 % IF SUBSAMPLING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dec_fac = 32;
+dec_fac = 64;
 
 sample_rate = N/dec_fac;
 
 Fs = N*length(X);
 Fs_altDDC = sample_rate*length(X);   % Sampling frequency
+<<<<<<< HEAD
+figure(5); clf;
+=======
+>>>>>>> e463cf17e9dba74c5733f1bfa9d9f753bc623f3d
 adc = s2_hat(1:sample_rate:end);        % "sample" the signal 
 if(plot_on == 1)
 figure(5);
 [Hys,Fys] = periodogram(adc,[],[],Fs,'power','centered');
+plot(Hys, Fys);
 title('ADC periodogram');
+
 Nc = length(Fys);
 figure(7); clf;
 periodogram(s2_hat,[],[],Fs,'power','centered');
@@ -121,7 +138,7 @@ end
 
 t2 = t(1:sample_rate:end);
 
-s2_star = 2*(adc .* cos(2*pi*4e3*t2) + j*adc.* sin(2*pi*4e3*t2));
+s2_star = 2*(adc .* cos(2*pi*6e3*t2) + j*adc.* sin(2*pi*6e3*t2));
 
 
 s2_star_i = real(s2_star);
@@ -206,9 +223,3 @@ delayB = lag(I); % to compensate dalays in channel & TX/RX
 diff = B(1:end-delayB) - B2(delayB+1:end);
 BER = sum(abs(diff))/(length(B)-delayB);
 disp(sprintf('bit error probability = %f',BER));
-
-
-
-
-
-
