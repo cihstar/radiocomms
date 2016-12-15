@@ -64,13 +64,8 @@ s_hat = filter(c,1,s_star);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sigma_x = std(s_hat);
 Ls = length(s_hat);
-<<<<<<< HEAD
-noise = (randn(1,Ls))*sqrt(N)/sqrt(2);
-s_hat = s_hat + sigma_x*10^(-SNR/20)*noise;
-=======
 noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N)/sqrt(2);
 s_hat = sqrt(2) * s_hat + sigma_x*10^(-SNR/20)*noise;
->>>>>>> e463cf17e9dba74c5733f1bfa9d9f753bc623f3d
 % line above WAS: (incorrectly) s_hat = s_hat + sigma_x*10^(-SNR/20)*sqrt(N)*noise;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % receive filtering
@@ -86,12 +81,6 @@ title('IF filter');
 order    = 5;
 fcutlow  = 69000;
 fcuthigh = 71000;
-=======
-end
-order    = 10;
-fcutlow  = 19000;
-fcuthigh = 21000;
->>>>>>> e463cf17e9dba74c5733f1bfa9d9f753bc623f3d
 Fs1 = N*length(X);
 [b,a]    = butter(order,[fcutlow,fcuthigh]/(Fs1/2), 'bandpass');
 s2_hat = filter(b,a,s_hat);
@@ -112,10 +101,6 @@ sample_rate = N/dec_fac;
 
 Fs = N*length(X);
 Fs_altDDC = sample_rate*length(X);   % Sampling frequency
-<<<<<<< HEAD
-figure(5); clf;
-=======
->>>>>>> e463cf17e9dba74c5733f1bfa9d9f753bc623f3d
 adc = s2_hat(1:sample_rate:end);        % "sample" the signal 
 if(plot_on == 1)
 figure(5);
