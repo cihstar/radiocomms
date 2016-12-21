@@ -91,14 +91,18 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % conversion from QPSK to bits stream
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-B2 = QPSK_demod(X_hat);
+B2 = QPSK_demod(X_hat(20:end));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate bit errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[corr, lag] = xcorr(B2, B);%perform cross correlation
+B_t = B(39:end);
+[corr, lag] = xcorr(B2, B_t);%perform cross correlation
 [~,I] = max(abs(corr)); %The index with the highest value of correlation
 delayB = lag(I); % to compensate dalays in channel & TX/RX
-diff = B(1:end-delayB) - B2(delayB+1:end);
+length(B)
+length(B2)
+length(B_t)
+diff = B_t(1:end-delayB) - B2(delayB+1:end);
 BER = sum(abs(diff))/(length(B)-delayB);
 disp(sprintf('bit error probability = %f\tNinit = %d',BER, Ninit));

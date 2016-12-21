@@ -9,12 +9,12 @@ N = 1;
 for SNR = snrs
     ber_total = 0;
     for n = 1:N
-        ber_total = ber_total + DigiTrans_with_IF(SNR,0,0);
+        ber_total = ber_total + DigiTrans_with_IF(SNR,0,0,0);
     end
     bers_qpsk(ber_index) = ber_total/N;
     ber_total = 0;
     for n = 1:N
-        ber_total = ber_total + DigiTrans_with_IF(SNR,0,1);
+        ber_total = ber_total + DigiTrans_with_IF(SNR,0,1,0);
     end
     bers_dqpsk(ber_index) = ber_total/N;
     EbNo_lin = 10^(SNR/10);
@@ -22,7 +22,7 @@ for SNR = snrs
     ber_index = ber_index + 1;
 end
 
-figure(1);
+figure(2);
 
 semilogy(snrs,bers_theo,'r', snrs,bers_qpsk,'bx',snrs,bers_dqpsk,'gx','LineWidth',2);
 legend('Theoretical QSPK', 'Simlated QPSK', 'Simulated DQPSK');

@@ -2,7 +2,7 @@ function BER = DigiTrans_baseband(SNR, plot_on, diff_on)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % bit stream generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-LB = 10000;			% number of bits
+LB = 100000;			% number of bits
 B = BitStream(LB);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,8 +40,8 @@ s_hat = filter(c,1,s);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sigma_x = std(s_hat);
 Ls = length(s_hat);
-noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N)/sqrt(2);
-s_hat = sqrt(2) * s_hat + sigma_x*10^(-SNR/20)*noise;
+noise = (randn(1,Ls) + sqrt(-1)*randn(1,Ls))*sqrt(N/2);
+s_hat = sqrt(2)*s_hat + sigma_x*10^(-SNR/20)*noise;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % receive filtering
@@ -91,7 +91,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % conversion from QPSK to bits stream
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-B2 = QPSK_demod(X_hat);
+B2 = QPSK_demod(X_hat(20:end));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate bit errors
@@ -99,6 +99,7 @@ B2 = QPSK_demod(X_hat);
 [corr, lag] = xcorr(B2, B);%perform cross correlation
 [~,I] = max(abs(corr)); %The index with the highest value of correlation
 delayB = lag(I); % to compensate dalays in channel & TX/RX
-diff = B(1:end-delayB) - B2(delayB+1:end);
+
+diff = B(20:end-delayB) - B2(delayB+1:end);
 BER = sum(abs(diff))/(length(B)-delayB);
 disp(sprintf('bit error probability = %f\tNinit = %d',BER, Ninit));
