@@ -13,6 +13,9 @@ function BER = DigiTrans_with_IF(SNR, plot_on, diff_on, if_on)
 LB = 1000;			% number of bits
 B = BitStream(LB);
 
+timespan = 1;
+bps = LB/timespan;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % conversion to 16-QAM symbol 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,39 +28,26 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % upsampling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-N = 1024; 	% oversampling factor for transmitted data
+N = 1024*timespan; 	% oversampling factor for transmitted data
 Xup = zeros(1,length(X)*N);
 Xup(1:N:end) = X;
-
-if(plot_on==1)
-    figure(8); clf;
-    plot(Xup(20:end),'.');
-    title('constellation'); xlabel('I'); ylabel('Q');
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % modulation onto carrier and transmit filtering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-h = sqrt(N)*firrcos(10*N,1/N,.5,2,'rolloff','sqrt');
+h = sqrt(N)*firrcos(N/timespan,1/(N/timespan),.5,2,'rolloff','sqrt');
 s = filter(h,1,Xup);
 
 if(if_on == 1)
     Fc = 70e3; %70kHz carrier
-    t = 0:1/(length(s)):(1-1/(length(s)));
+    t = 0:timespan/(length(s)):timespan - 1/length(s);   
     s = (real(s) .* cos(2*pi*Fc*t) + imag(s) .* sin(2*pi*Fc*t));
-    if(plot_on==1)
-        figure(3);
-        periodogram(s,[],[],length(s),'power','centered');
-        title('s^*');
-    end
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % filtering with channel impulse response
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 c = [1 0 0];			        % CIR (at N x symbol rate)
 s_hat = filter(c,1,s);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % additive white Gaussian noise (AWGN)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,45 +59,43 @@ s_hat = sqrt(2) * s_hat + sigma_x*10^(-SNR/20)*noise;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % receive filtering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-s2_star = filter(h,1,s_hat);   
+%s2_star = filter(h,1,s_hat);   
 if(if_on == 1)
     %bandpass filter signal
-    order    = 6;
-    fcutlow  = 69; %khz
-    fcuthigh = 71; %khz
-    Fs1 = N*length(X);
-    [b,a]    = butter(order,[fcutlow,fcuthigh]*(10^3)/(Fs1/2), 'bandpass');
-    s2_hat = filter(b,a,s_hat);    
+    order    = 4;
+    fwidth = bps*2;
+    Fs1 = length(s_hat)/ timespan;
+    
+    
+    
+    [b,a] = butter(order,[Fc-fwidth/2,Fc+fwidth/2]/(Fs1/2), 'bandpass');
+    s2_hat = filter(b,a,s_hat);  
+    
     if(plot_on==1)
-        figure(4);  clf;
-        hold on
-        periodogram(s_hat);
+        figure(1);  clf;
+        [pxx, f] = periodogram(s_hat,[],[],(length(s_hat))/timespan,'centered');
         title('IF filter');
         [h,w] = freqz(b,a,100);
-        plot(w/pi,20*log10(abs(h)),'r');
-        title('BPF for received signal');
-        hold off
+        plot(f,10*log10(pxx),'b',w*(Fs1/(2*pi)),20*log10(abs(h)),'r');
+        axis([-inf inf -200 0])
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % IF SUBSAMPLING
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    dec_fac = 64;
+    dec_fac = 32; %*timespan;
+    sample_rate = N/(dec_fac*timespan);
 
-    sample_rate = N/dec_fac;
-
-    Fs = N*length(X);
-    Fs_altDDC = sample_rate*length(X);   % Sampling frequency
+    Fs = length(s2_hat)/timespan
+    Fs_altDDC = Fs/sample_rate   % Sampling frequency
     adc = s2_hat(1:sample_rate:end);        % "sample" the signal 
+    
     if(plot_on == 1)
-        figure(5);
         [Hys,Fys] = periodogram(adc,[],[],Fs,'power','centered');
-        plot(Hys, Fys);
-        title('ADC periodogram');
 
         Nc = length(Fys);
-        figure(7); clf;
+        figure(2); clf;
         periodogram(s2_hat,[],[],Fs,'power','centered');
         title('Received signal');
         clear y;
@@ -119,49 +107,49 @@ if(if_on == 1)
             'Location','NorthEast');
     end
 
+    %RECEIVE FILTERING
+    
     t2 = t(1:sample_rate:end);
-
+    
     s2_star = 2*(adc .* cos(2*pi*6e3*t2) + j*adc.* sin(2*pi*6e3*t2));
+    
+    h = sqrt(N)*firrcos((N/dec_fac),1/(N/dec_fac),.5,2,'rolloff','sqrt');
+else
+    s2_star = s_hat;
+    h = sqrt(N)*firrcos(N,1/N,.5,2,'rolloff','sqrt');
+end
 
-
+s2_star = filter(h,1,s2_star);
+if(if_on==1)
     s2_star_i = real(s2_star);
     s2_star_q = imag(s2_star);
 
     %low filter signal
     if(plot_on==1)
-        figure(12);  clf;
+        figure(3);  clf;
         hold on
-        periodogram(s2_star);
-        title('IF filter');
+        [pxx, f] = periodogram(s2_star_i,[],[],Fs_altDDC,'centered');
+        title('LPF filter');
     end
     
-    order    = 9;
-    fcutlow  = 3500;
-    [b,a]    = butter(order,[fcutlow]/(length(s2_star)/2));
-    s2_star = filter(b,a,s2_star_i) + 1i*filter(b,a,s2_star_q);
-    [h,w] = freqz(b,a,100);
+    order    = 11;
+    fcutlow  = bps*2;
+    [b,a]    = butter(order,[fcutlow]/Fs_altDDC);
+    s2_star = filter(b,a,s2_star_i) + 1i* filter(b,a,s2_star_q);
     
     if(plot_on==1)
-        plot(w/pi,20*log10(abs(h)),'r');
-        title('BPF for received signal');
+        [h,w] = freqz(b,a,100);
+        plot(f,10*log10(pxx),'b',w*(Fs_altDDC/(2*pi)),20*log10(abs(h)),'r');
+        axis([-inf inf -200 0])
         hold off
     end
-
-    EYE = zeros(128,200); 
-    EYE(:) = s2_star(sample_rate*40+1:sample_rate*40+128*200)';
-    if(plot_on==1)
-        figure(1); clf;
-        plot(real(EYE));	% I-component only
-        title('eye diagram of received data before differential detection');
-        xlabel('wrapped time'); ylabel('I-component amplitude');
-    end 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Differential Detection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if(if_on == 1)
-    samples_per_symbol = sample_rate * 4;
+    samples_per_symbol = (N/dec_fac)
 else
     samples_per_symbol = N;
 end
@@ -169,35 +157,34 @@ end
 if(diff_on == 1)
     s2_star = Differential_Demodulation(s2_star, samples_per_symbol);
     if(plot_on == 1)
-        figure(24); clf;
-        plot(s2_star(20:end),'.');
+        figure(4); clf;
+        plot(s2_star(65:end),'.');
         title('constellation recieved after differential detection'); xlabel('I'); ylabel('Q');
     end
+else
+    s2_star = s_hat;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % EYE DIAGRAM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-EYE = zeros(128,200); 
-EYE(:) = s2_star(samples_per_symbol*10+1:samples_per_symbol*10+128*200)';
 if(plot_on==1)
-    figure(15); clf;
-    plot(real(EYE));	% I-component only
-    title('eye diagram of received data');
-    xlabel('wrapped time'); ylabel('I-component amplitude');
+    eyediagram(s2_star(samples_per_symbol*10:end),samples_per_symbol*2,samples_per_symbol);
 end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % sampling at symbol rate
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Ninit = 26;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Ninit = 24;
 X_hat = s2_star(Ninit:samples_per_symbol:end);        % "sample" the signal 
+length(X_hat)
 
 % plot received constellation
 if(plot_on==1)
-    figure(2); clf;
+    figure(6); clf;
     plot(X_hat(40:end),'.');
-    title('constellation'); xlabel('I'); ylabel('Q');
+    title('Received constellation'); xlabel('I'); ylabel('Q');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,7 +195,9 @@ B2 = QPSK_demod(X_hat(20:end));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % calculate bit errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 B_t = B(39:end);
+
 [corr, lag] = xcorr(B2, B_t);%perform cross correlation
 [~,I] = max(abs(corr)); %The index with the highest value of correlation
 delayB = lag(I); % to compensate dalays in channel & TX/RX
