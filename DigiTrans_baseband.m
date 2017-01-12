@@ -1,4 +1,4 @@
-function BER = DigiTrans_baseband(SNR, plot_on, diff_on, offset)
+function BER = DigiTrans_baseband(SNR, plot_on, diff_on)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % bit stream generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,10 +35,6 @@ s = filter(h,1,Xup);
 c = [1 0 0];			        % CIR (at N x symbol rate)
 s_hat = filter(c,1,s);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%frequency offset
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-s_hat = carrier_offset(s_hat, offset/(10e3), 16); %offset a fraction of baud rate, 16 elements per symbol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % additive white Gaussian noise (AWGN)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
