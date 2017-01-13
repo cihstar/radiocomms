@@ -1,4 +1,4 @@
-function BER = DigiTrans_baseband(SNR, plot_on, diff_on)
+function BER = DigiTrans_baseband(SNR, plot_on, diff_on, offset)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % bit stream generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
